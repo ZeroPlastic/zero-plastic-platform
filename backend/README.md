@@ -8,10 +8,11 @@ Backend API foundation for the ZeroPlastic Platform.
 - TypeScript
 - Express.js
 - dotenv, cors, helmet, morgan
+- Prisma ORM (Azure PostgreSQL)
 
 ## Getting Started
 
-1. Copy the environment file:
+1. Copy the environment file and set `DATABASE_URL` to the Azure PostgreSQL connection string:
 
    ```bash
    cp .env.example .env
@@ -45,15 +46,18 @@ Backend API foundation for the ZeroPlastic Platform.
 
 - `GET /` — Returns `ZeroPlastic API Running`
 - `GET /health` — Returns service health status
+- `GET /db-health` — Checks the database connection via Prisma
 
 ## Project Structure
 
 ```
 backend/
+  prisma/
+    schema.prisma   # Prisma schema (datasource + generator, no models yet)
   src/
     app.ts          # Express app configuration
     server.ts       # Server entry point
     routes/         # Route definitions
     middleware/      # Custom middleware
-    config/          # Configuration (env, etc.)
+    config/          # Configuration (env, prisma client, etc.)
 ```
