@@ -99,7 +99,11 @@ export async function registerWithPassword(input: {
   }
 
   const passwordHash = await hashPassword(password);
-  const user = await prisma.user.create({ data: { email, phone, passwordHash } });
+  const user = await prisma.$transaction(async (tx) => {
+    const created = await tx.user.create({ data: { email, phone, passwordHash } });
+    await tx.profile.create({ data: { userId: created.id } });
+    return created;
+  });
 
   logger.info(`User registered via email/password: ${user.id}`);
   const tokens = await issueTokens(user.id);
@@ -205,7 +209,11 @@ export async function verifyOtp(input: {
       throw new BadRequestError('Password is required to complete registration');
     }
     const passwordHash = await hashPassword(password);
-    const user = await prisma.user.create({ data: { phone, passwordHash } });
+    const user = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({ data: { phone, passwordHash } });
+      await tx.profile.create({ data: { userId: created.id } });
+      return created;
+    });
     logger.info(`User registered via phone OTP: ${user.id}`);
     const tokens = await issueTokens(user.id);
     return { user: toSafeUser(user), tokens };

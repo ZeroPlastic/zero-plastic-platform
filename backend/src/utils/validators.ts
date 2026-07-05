@@ -55,3 +55,20 @@ export function validateBody(schema: ObjectSchema) {
     next();
   };
 }
+
+export function validateQuery(schema: ObjectSchema) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    const { error, value } = schema.validate(req.query, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
+
+    if (error) {
+      next(new BadRequestError(error.details.map((d) => d.message).join('; ')));
+      return;
+    }
+
+    req.query = value;
+    next();
+  };
+}

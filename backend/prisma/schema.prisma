@@ -25,6 +25,15 @@ enum OtpPurpose {
   LOGIN
 }
 
+// Placeholder progression — ROOKIE and CHAMPION are the confirmed endpoints;
+// the middle steps are a reasonable guess pending the real list.
+enum UserTier {
+  ROOKIE
+  CONTRIBUTOR
+  HERO
+  CHAMPION
+}
+
 // ============ Authentication ============
 
 model User {
@@ -43,9 +52,56 @@ model User {
 
   userRoles     UserRole[]
   refreshTokens RefreshToken[]
+  profile       Profile?
 
   @@index([status])
   @@map("users")
+}
+
+// Kept separate from User (auth-only) so profile edits never touch login
+// credentials, and so a future EmployeeProfile can sit alongside this one
+// without redesigning User.
+model Profile {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @db.Uuid
+  name      String?
+  bio       String?
+  imageUrl  String?
+  tier      UserTier @default(ROOKIE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievements UserAchievement[]
+
+  @@map("profiles")
+}
+
+// Lookup table (data-driven, same reasoning as Role/Permission) — no awarding
+// logic yet, since that depends on activity data the platform doesn't track yet.
+model Achievement {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  profileId     String   @db.Uuid
+  achievementId String   @db.Uuid
+  earnedAt      DateTime @default(now())
+
+  profile     Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, achievementId])
+  @@index([achievementId])
+  @@map("user_achievements")
 }
 
 model RefreshToken {

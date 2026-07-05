@@ -1,10 +1,13 @@
-jest.mock('../../config/prisma', () => ({
-  prisma: {
+jest.mock('../../config/prisma', () => {
+  const mockPrisma: Record<string, any> = {
     user: {
       findFirst: jest.fn(),
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+    },
+    profile: {
+      create: jest.fn(),
     },
     otpCode: {
       create: jest.fn(),
@@ -20,8 +23,11 @@ jest.mock('../../config/prisma', () => ({
     userRole: {
       findMany: jest.fn(),
     },
-  },
-}));
+  };
+  // $transaction just runs the callback against the same mocked client.
+  mockPrisma.$transaction = jest.fn((callback: (tx: unknown) => unknown) => callback(mockPrisma));
+  return { prisma: mockPrisma };
+});
 
 jest.mock('../../utils/password', () => ({
   hashPassword: jest.fn(async (plain: string) => `hashed:${plain}`),
@@ -55,6 +61,7 @@ import {
 
 const mockPrisma = prisma as unknown as {
   user: Record<string, jest.Mock>;
+  profile: Record<string, jest.Mock>;
   otpCode: Record<string, jest.Mock>;
   refreshToken: Record<string, jest.Mock>;
   userRole: Record<string, jest.Mock>;
@@ -79,6 +86,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockPrisma.userRole.findMany.mockResolvedValue([]);
   mockPrisma.refreshToken.create.mockResolvedValue({});
+  mockPrisma.profile.create.mockResolvedValue({});
 });
 
 describe('registerWithPassword', () => {
